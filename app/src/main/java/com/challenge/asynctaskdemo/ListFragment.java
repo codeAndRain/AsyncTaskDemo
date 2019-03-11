@@ -1,6 +1,7 @@
 package com.challenge.asynctaskdemo;
 
 
+import android.content.Context;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.SystemClock;
@@ -13,6 +14,7 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import java.util.Arrays;
 import java.util.List;
@@ -37,10 +39,11 @@ public class ListFragment extends Fragment {
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // retain fragment across configuration changes (i.e screen rotations)
         setRetainInstance(true);
 
         adapter = new NamesAdapter();
-        task = new AddNameTask(Arrays.asList(names), adapter);
+        task = new AddNameTask(getActivity(), Arrays.asList(names), adapter);
         task.execute();
     }
 
@@ -53,20 +56,31 @@ public class ListFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view,savedInstanceState);
         recyclerView = view.findViewById(R.id.names_recycler_view);
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
         recyclerView.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         recyclerView.setAdapter(adapter);
     }
 
+    @Override
+    public void onDestroy() {
+        if (task != null) {
+            task.cancel(false);
+        }
+        super.onDestroy();
+    }
+
     public static class AddNameTask extends AsyncTask<Void, String, Void> {
 
         List<String> names;
         NamesAdapter adapter;
+        Context context;
 
-        public AddNameTask(List<String> names, NamesAdapter adapter) {
+        public AddNameTask(Context context, List<String> names, NamesAdapter adapter) {
             this.names = names;
             this.adapter = adapter;
+            this.context = context;
         }
 
         @Override
@@ -84,12 +98,12 @@ public class ListFragment extends Fragment {
         protected void onProgressUpdate(String... values) {
             super.onProgressUpdate(values);
             adapter.addName(values[0]);
-
         }
 
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+            Toast.makeText(context, "Completed", Toast.LENGTH_SHORT).show();
         }
     }
 }
